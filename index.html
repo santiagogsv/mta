@@ -432,12 +432,7 @@
         lastRefreshPromise = null,
         refreshInterval = null,
         cachedAlerts = [],
-        activeFilters = {},
-        notificationSettings = JSON.parse(
-          localStorage.getItem("notificationSettings") || "{}",
-        ),
-        lastNotifiedTimes = {},
-        backgroundAudio = null;
+        activeFilters = {};
 
       // Minimal protobuf decoder - only decodes fields we need from GTFS-realtime
       const PBF = {
@@ -3035,125 +3030,10 @@
         content.style.position = "relative";
         const _directionText =
           train.direction === "north" ? "Uptown" : "Downtown";
-        content.innerHTML = `<button class="modal-close" aria-label="Close">&times;</button><div class="modal-header"><span class="route-badge" style="background:${ROUTE_COLORS[train.route] || ROUTE_COLORS[baseRoute] || "#666"};${DARK_TEXT_ROUTES.has(train.route) || DARK_TEXT_ROUTES.has(baseRoute) ? "color:#000;" : ""}">${train.route}</span><div><div class="modal-title">${train.destination || "Unknown"}</div><div class="modal-subtitle">${train.minutes} min</div></div></div><button onclick="enableTrainNotifications('${train.route}', '${train.direction}')" style="width: 100%; margin: 1rem 0; padding: 0.75rem; background: #007aff; color: #fff; border: none; border-radius: 0.5rem;">Keep me posted on this train</button><div class="modal-stops">${train.upcomingStops.map((stop, i, arr) => `<div class="modal-stop${i === arr.length - 1 ? " terminal" : ""}"><span class="modal-arrow">${i === arr.length - 1 ? "●" : "↓"}</span><span class="modal-stop-text">${stop.name}</span>${stop.time ? `<span class="arrival-time">${stop.time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>` : ""}</div>`).join("")}</div>`;
+        content.innerHTML = `<button class="modal-close" aria-label="Close">&times;</button><div class="modal-header"><span class="route-badge" style="background:${ROUTE_COLORS[train.route] || ROUTE_COLORS[baseRoute] || "#666"};${DARK_TEXT_ROUTES.has(train.route) || DARK_TEXT_ROUTES.has(baseRoute) ? "color:#000;" : ""}">${train.route}</span><div><div class="modal-title">${train.destination || "Unknown"}</div><div class="modal-subtitle">${train.minutes} min</div></div></div><div class="modal-stops">${train.upcomingStops.map((stop, i, arr) => `<div class="modal-stop${i === arr.length - 1 ? " terminal" : ""}"><span class="modal-arrow">${i === arr.length - 1 ? "●" : "↓"}</span><span class="modal-stop-text">${stop.name}</span>${stop.time ? `<span class="arrival-time">${stop.time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>` : ""}</div>`).join("")}</div>`;
         overlay.appendChild(content);
         overlay.onclick = () => overlay.remove();
         document.body.appendChild(overlay);
-      }
-
-      async function _enableTrainNotifications(route, direction) {
-        if ("Notification" in window) {
-          const permission = await Notification.requestPermission();
-          if (permission === "granted") {
-            notificationSettings = { route, direction };
-            localStorage.setItem(
-              "notificationSettings",
-              JSON.stringify(notificationSettings),
-            );
-            const directionText = direction === "north" ? "Uptown" : "Downtown";
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-            const iosWarning = isIOS
-              ? " Note: Playing barely audible heartbeat audio to keep the app active in background for notifications."
-              : "";
-            alert(
-              `Notifications enabled for ${route} ${directionText}. You'll be notified when the next train's arrival time changes.${iosWarning}`,
-            );
-            startNotificationMonitoring();
-            if (isIOS) {
-              backgroundAudio = new Audio("heartbeat.mp3");
-              backgroundAudio.loop = true;
-              backgroundAudio.volume = 0.01;
-              backgroundAudio
-                .play()
-                .catch((e) => console.warn("Background audio play failed:", e));
-            }
-          } else {
-            alert("Notification permission denied.");
-          }
-        } else {
-          alert("Notifications not supported in this browser.");
-        }
-      }
-
-      function _disableNotifications() {
-        notificationSettings = {};
-        localStorage.removeItem("notificationSettings");
-        lastNotifiedTimes = {};
-        if (backgroundAudio) {
-          backgroundAudio.pause();
-          backgroundAudio = null;
-        }
-        alert("Notifications disabled.");
-      }
-
-      function startNotificationMonitoring() {
-        if (Object.keys(notificationSettings).length === 0) return;
-        // Check every 30 seconds
-        setInterval(async () => {
-          try {
-            const trainData = await fetchTrainTimes(cachedStations || []);
-            checkForNotificationUpdates(trainData.arrivals);
-          } catch (e) {
-            console.warn("Notification check failed:", e);
-          }
-        }, 30000);
-      }
-
-      function checkForNotificationUpdates(arrivals) {
-        if (!notificationSettings.route || !notificationSettings.direction)
-          return;
-
-        const route = notificationSettings.route;
-        const direction = notificationSettings.direction;
-
-        // Find relevant trains
-        const relevantTrains = [];
-        for (const station of arrivals) {
-          for (const train of station.trains) {
-            if (train.route === route && train.direction === direction) {
-              relevantTrains.push({ ...train, station: station.name });
-            }
-          }
-        }
-
-        if (relevantTrains.length === 0) return;
-
-        // Sort by time
-        relevantTrains.sort((a, b) => a.minutes - b.minutes);
-        const nextTrain = relevantTrains[0];
-
-        const key = `${route}-${direction}`;
-        const lastNotified = lastNotifiedTimes[key];
-
-        if (!lastNotified || nextTrain.minutes !== lastNotified.minutes) {
-          // Time changed, notify
-          const directionText = direction === "north" ? "Uptown" : "Downtown";
-          const title = `Next ${route} ${directionText}`;
-          let body = `${nextTrain.minutes} min from ${nextTrain.station}`;
-          if (lastNotified && lastNotified.minutes !== nextTrain.minutes) {
-            body += ` (was ${lastNotified.minutes} min)`;
-          }
-          showNotification(title, body, key);
-          lastNotifiedTimes[key] = {
-            minutes: nextTrain.minutes,
-            time: Date.now(),
-          };
-        }
-      }
-
-      function showNotification(title, body, tag = "mta-train-notification") {
-        if ("Notification" in window && Notification.permission === "granted") {
-          const notification = new Notification(title, {
-            body: body,
-            icon: "mta.png",
-            badge: "mta.png",
-            tag: tag,
-          });
-          notification.onclick = () => {
-            window.focus();
-            notification.close();
-          };
-        }
       }
 
       async function load() {
@@ -3267,7 +3147,6 @@
       window.addEventListener("DOMContentLoaded", () => {
         load();
         startRefreshInterval();
-        startNotificationMonitoring();
       });
 
       // Register service worker
