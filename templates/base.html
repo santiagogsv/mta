@@ -1,9 +1,45 @@
 <!doctype html>
 <html lang="en">
   <head>
+    {% set meta_title = config.title %}
+    {% if page is defined and page.title %}
+      {% set meta_title = page.title ~ " | " ~ config.title %}
+    {% elif section is defined and section.title %}
+      {% set meta_title = section.title ~ " | " ~ config.title %}
+    {% endif %}
+
+    {% set meta_description = config.extra.site_description | default(value=config.description | default(value="")) %}
+    {% if page is defined and page.description %}
+      {% set meta_description = page.description %}
+    {% elif section is defined and section.description %}
+      {% set meta_description = section.description %}
+    {% endif %}
+
+    {% set meta_url = current_url | default(value=config.base_url) %}
+    {% set meta_image = config.extra.default_og_image | default(value=config.base_url ~ "/mta.png") %}
+
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{% block title %}{{ config.title }}{% endblock title %}</title>
+    <title>{% block title %}{{ meta_title }}{% endblock title %}</title>
+    <meta name="description" content="{{ meta_description }}" />
+    <meta name="robots" content="index,follow,max-image-preview:large" />
+    <link rel="canonical" href="{{ meta_url }}" />
+    <meta name="author" content="{{ config.extra.author | default(value=config.title) }}" />
+    {% if config.extra.keywords is defined and config.extra.keywords | length > 0 %}
+      <meta name="keywords" content="{{ config.extra.keywords | join(sep=", ") }}" />
+    {% endif %}
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="{{ config.extra.site_name | default(value=config.title) }}" />
+    <meta property="og:title" content="{{ meta_title }}" />
+    <meta property="og:description" content="{{ meta_description }}" />
+    <meta property="og:url" content="{{ meta_url }}" />
+    <meta property="og:image" content="{{ meta_image }}" />
+
+    <meta name="twitter:card" content="{{ config.extra.twitter_card | default(value="summary") }}" />
+    <meta name="twitter:title" content="{{ meta_title }}" />
+    <meta name="twitter:description" content="{{ meta_description }}" />
+    <meta name="twitter:image" content="{{ meta_image }}" />
     <style>
       html {
         margin: 0;

@@ -1,6 +1,7 @@
 +++
 title = "MTA Buses"
-template = "empty.html"
+template = "buses.html"
+description = "Real-time MTA bus arrivals and nearby bus stops in New York City."
 +++
 
-Coming soon.
+Nearby stops and arrivals.

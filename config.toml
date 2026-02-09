@@ -1,8 +1,20 @@
 base_url = "http://localhost:1111"
 title = "MTA"
+description = "Real-time MTA arrivals for NYC trains and buses."
 default_language = "en"
 compile_sass = false
 build_search_index = false
 
 [extra]
 site_name = "MTA"
+site_description = "Live MTA train and bus arrival times in New York City."
+author = "MTA Arrivals"
+twitter_card = "summary"
+keywords = [
+  "MTA",
+  "NYC subway",
+  "MTA trains",
+  "MTA buses",
+  "real-time arrivals",
+  "New York transit",
+]
