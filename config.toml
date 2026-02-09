@@ -1,4 +1,4 @@
-base_url = "http://localhost:1111"
+base_url = "https://mta.guadarrama.us"
 title = "MTA"
 description = "Real-time MTA arrivals for NYC trains and buses."
 default_language = "en"
