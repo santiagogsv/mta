@@ -1,0 +1,8 @@
+base_url = "http://localhost:1111"
+title = "MTA"
+default_language = "en"
+compile_sass = false
+build_search_index = false
+
+[extra]
+site_name = "MTA"

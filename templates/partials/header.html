@@ -1,0 +1,12 @@
+{% set home_url = get_url(path='@/_index.md') %}
+{% set buses_url = get_url(path='@/buses.md') %}
+{% set map_url = get_url(path='@/map.md') %}
+
+<header class="site-header">
+  <a class="site-title" href="{{ home_url }}">MTA</a>
+  <nav class="site-nav" aria-label="Primary">
+    <a href="{{ home_url }}">Trains</a>
+    <a href="{{ buses_url }}">Buses</a>
+    <a href="{{ map_url }}">Map</a>
+  </nav>
+</header>
